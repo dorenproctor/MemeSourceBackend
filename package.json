@@ -1,0 +1,17 @@
+{
+  "name": "memesourcebackend",
+  "version": "1.0.0",
+  "description": "The backend for MemeSource",
+  "main": "index.js",
+  "dependencies": {
+    "aws-sdk": "^2.228.1",
+    "express": "^4.16.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "node index.js",
+    "test": "test"
+  },
+  "author": "Doren Proctor",
+  "license": "ISC"
+}
