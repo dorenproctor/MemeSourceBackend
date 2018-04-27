@@ -1,0 +1,13 @@
+curl -i -X POST -H 'Content-Type: application/json' -d '{"email": "example@example.com", "username": "someUserName", "password": "somePassword", "passwordConf": "somePassword"}' http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/createUser
+
+curl -i -X GET http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/
+
+
+curl -i -X POST -H 'Content-Type: application/json' -d '{"imageId": "0", "content": "Generic comment.", "user": "5ae2444b8e0c663bfe61d71e"}' http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/postComment
+
+
+curl -i -X GET http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/getComments
+
+curl -i -X DELETE http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/deleteComment/5ae2b64b6f26a2455fac46a6
+
+curl -i -X DELETE http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/deleteUser/5ae26e03e92be43ed95b1408

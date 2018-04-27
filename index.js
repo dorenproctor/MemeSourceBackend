@@ -87,8 +87,7 @@ app.get('/getComments/:id', function(req, res) {
 });
 
 app.delete('/deleteComment/:commentId', function(req, res) {
-    console.log(req.params.commentId);
-    Comment.findByIdAndRemove(new mongoose.mongo.ObjectID(req.params.commentId), function(err, removed) {
+    Comment.findByIdAndRemove(req.params.commentId, function(err, removed) {
         if (err) {
             console.log(err);
             res.send(err);
@@ -96,14 +95,13 @@ app.delete('/deleteComment/:commentId', function(req, res) {
             console.log("Comment removed: ", removed);
             res.send({ statusCode: 200 });
         } else {
-            console.log("Could not find comment to delete");
+            console.log("Comment not found to delete");
             res.send("Comment not found to delete");
         }
     });
 });
 
-app.post('/user', function(req, res){
-// console.log(req.body.email, req.body.username, req.body.password, req.body.passwordConf);
+app.post('/createUser', function(req, res){
 if (req.body.email && req.body.username &&
     req.body.password && req.body.passwordConf) {
         var userData = {
@@ -112,15 +110,11 @@ if (req.body.email && req.body.username &&
             password: req.body.password,
             passwordConf: req.body.passwordConf,
         }
-        //use schema.create to insert data into the db
         User.create(userData, function (err, user) {
             if (err) {
                 res.send(err);
                 console.log(err);
-                // return next(err)
             } else {
-                // return res.redirect('/profile');
-                // res.send("Created user " + req.body.username);
                 console.log("Created user " + req.body.username);
                 res.send({ statusCode: 200 });
             }
@@ -128,12 +122,57 @@ if (req.body.email && req.body.username &&
     }
 });
 
+app.delete('/deleteUser/:userId', function(req, res) {
+    User.findByIdAndRemove(req.params.userId, function(err, removed) {
+        if (err) {
+            console.log(err);
+            res.send(err);
+        } else if (removed) {
+            console.log("User removed: ", removed);
+            res.send({ statusCode: 200 });
+        } else {
+            console.log("Comment not found to delete");
+            res.send("Comment not found to delete");
+        }
+    });
+});
 
-app.get('/', (req, res) => {
-    console.log("hey!");
-    res.send('HEY!');
-})
-app.get('/img/get/:id', (req, res) => {
+app.get('/listUsers', function(req, res) {
+    User.find(function(err, users) {
+        if (err) {
+            console.log(err);
+            res.send(err);
+        } else {
+            console.log(users);
+            res.send(users);
+        }
+    });
+});
+
+app.get('/signIn/:username/:password', function(req, res) {
+    User.findOne({"username": req.params.username}, function(err, user) {
+        if (err) {
+            console.log(err);
+            res.send(err);
+        } else if (user) {
+            if (req.params.password === user.password) {
+                console.log(user.username, " signed in");
+                res.send({statusCode: 200});
+            } else {
+                console.log(user, user.username, user.password, req.params.username, req.params.password);
+                console.log("Password doesn't match");
+                res.send("Password doesn't match");
+            }
+        } else {
+            console.log("Didn't find user");
+            res.send("Didn't find user");
+        }
+    });
+});
+
+
+
+app.get('/getImage/:id', (req, res) => {
     var params = {
         Bucket: 'memesourceimages',
         Key : req.params.id+'.jpg'
@@ -156,12 +195,10 @@ app.get('/img/get/:id', (req, res) => {
     });
     console.log("req: ", req.query);
 })
-app.get('/comments/get', (req, res) => {
-    res.send('Get comments!');
-    console.log('Get comments!');
+
+app.get('/', (req, res) => {
+    console.log('Welcome to memesource');
+    res.send('Welcome to memesource');
 })
-// app.get('/comments/post', (req, res) => {
-//     res.send('post comments!');
-// })
 
 app.listen(3000, () => console.log('Server running on port 3000'));
