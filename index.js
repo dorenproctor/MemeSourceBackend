@@ -39,7 +39,7 @@ var User = mongoose.model('User', UserSchema);
 // module.exports = User;
 
 var CommentSchema = new mongoose.Schema({
-    imageId: Number,
+    imageId: {type: Number, required: true },
     content: { type: String, required: true },
     user: { type: ObjectId, ref: User },
     date: { type: Date, default: Date.now },
@@ -48,7 +48,61 @@ var CommentSchema = new mongoose.Schema({
 });
 var Comment = mongoose.model('Comment', CommentSchema);
 
-app.post('/user', function(req,res){
+app.post('/postComment', function(req, res){
+    if ((req.body.imageId) && req.body.content && req.body.user) {
+        var commentData = {
+            imageId: req.body.imageId,
+            content: req.body.content,
+            user: req.body.user
+        }
+        Comment.create(commentData, function (err, user) {
+            if (err) {
+                res.send(err);
+                console.log(err);
+            } else {
+                console.log("Created comment");
+                const response = { statusCode: 200 }
+                res.send(response);
+            }
+        });
+    } else {
+        res.send("The proper parameters were not passed");
+    }
+});
+
+app.get('/getComments/:id', function(req, res) {
+    Comment.find({"imageId": req.params.id}, function(err, comments) {
+        if (err) {
+            console.log(err);
+            res.send(err);
+        } else {
+            console.log(comments);
+            const response = {
+                statusCode: 200,
+                comments: comments
+            }
+            res.send(comments);
+        }
+    });
+});
+
+app.delete('/deleteComment/:commentId', function(req, res) {
+    console.log(req.params.commentId);
+    Comment.findByIdAndRemove(new mongoose.mongo.ObjectID(req.params.commentId), function(err, removed) {
+        if (err) {
+            console.log(err);
+            res.send(err);
+        } else if (removed) {
+            console.log("Comment removed: ", removed);
+            res.send({ statusCode: 200 });
+        } else {
+            console.log("Could not find comment to delete");
+            res.send("Comment not found to delete");
+        }
+    });
+});
+
+app.post('/user', function(req, res){
 // console.log(req.body.email, req.body.username, req.body.password, req.body.passwordConf);
 if (req.body.email && req.body.username &&
     req.body.password && req.body.passwordConf) {
@@ -68,8 +122,7 @@ if (req.body.email && req.body.username &&
                 // return res.redirect('/profile');
                 // res.send("Created user " + req.body.username);
                 console.log("Created user " + req.body.username);
-                const response = { statusCode: 200 }
-                res.send(response);
+                res.send({ statusCode: 200 });
             }
         });
     }
