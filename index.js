@@ -11,7 +11,7 @@ const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-mongoose.connect('mongodb://localhost/memesource');
+mongoose.connect('mongodb://localhost/ms');
 
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'Failed to connect to database'));
@@ -41,12 +41,12 @@ var User = mongoose.model('User', UserSchema);
 var CommentSchema = new mongoose.Schema({
     imageId: {type: Number, required: true },
     content: { type: String, required: true },
-    user: { type: ObjectId, ref: User },
+    user: String,
     date: { type: Date, default: Date.now },
     upvotes: { type: Number, default: 0 },
     downvotes: { type: Number, default: 0 },
-    upvoters: [{ type: ObjectId, ref: User }],
-    downvoters: [{ type: ObjectId, ref: User }],
+    upvoters: [String],
+    downvoters: [String],
 });
 var Comment = mongoose.model('Comment', CommentSchema);
 
@@ -54,93 +54,65 @@ var ImageSchema = new mongoose.Schema({
     imageId: {type: Number, required: true, unique: true },
     upvotes: { type: Number, default: 0 },
     downvotes: { type: Number, default: 0 },
-    upvoters: [{ type: ObjectId, ref: User }],
-    downvoters: [{ type: ObjectId, ref: User }],
+    upvoters: [String],
+    downvoters: [String],
     description: {type: String, default: ""},
     tags: [String]
 });
 var Image = mongoose.model('Image', ImageSchema);
 
 
-// for (var i = 0; i<124; i++) {
-//     var imageData = {
-//         imageId: i,
-//     };
-//     Image.create(imageData, function (err, image) {
-//         if (err) {
-//             console.log(err);
-//         } else {
-//             console.log("Created image entry");
-//             const response = { statusCode: 200 }
-//         }
-//     });
-// }
 
-
-app.put('/upvoteImage/:userId/:imageId', function(req, res) {
+app.put('/upvoteImage/:username/:imageId', function(req, res) {
+    var username = req.params.username;
+    var imageId = req.params.imageId;
     var upvoted = false;
     var downvoted = false;
-    var returnString = "";
-    Image.findOne({"imageId": req.params.imageId}, function(err, img) {
+    Image.findOne({"imageId": imageId}, function(err, img) {
         if (err) {
             console.log(err);
             res.send(err);
-            return;
-        } else if (img) {
-            console.log(typeof req.params.userId, typeof img.upvoters);
-            if (img.upvoters.includes(req.params.userId)) {
-                console.log("worked");
-                upvoted = true;
-            }
-            if (img.downvoters.includes(req.params.userId.toString())) {
-                downvoted = true;
-            }
-        } else {
+        } else if (!img) {
             console.log("Couldn't find image");
             res.send("Couldn't find image");
-            return;
+        } else {
+            if (img.upvoters.includes(username)) { upvoted = true; }
+            if (img.downvoters.includes(username)) { downvoted = true; }
+            if (!upvoted) { //add upvote
+                Image.updateOne({"imageId": imageId}, {$push: {upvoters: username}, $pull: {downvoters: username}, $inc: {upvotes: 1}}, function(err, data) {
+                    if (err) {
+                        console.log(err);
+                        res.send(err);
+                        return;
+                    } else {
+                        console.log(username+" upvoted "+imageId);
+                    }
+                });
+            } else { //already upvoted. remove it
+                Image.updateOne({"imageId": imageId}, {$pull: {upvoters: username}, $inc: {upvotes: -1}}, function(err, data) {
+                    if (err) {
+                        console.log(err);
+                        res.send(err);
+                        return;
+                    } else {
+                        console.log(username+" removed upvote on Image "+imageId);
+                    }
+                });
+            }
+            if (downvoted) { //remove downvote
+                Image.updateOne({"imageId": imageId}, {$pull: {downvoters: username}, $inc: {downvotes: -1}}, function(err, data) {
+                    if (err) {
+                        console.log(err);
+                        res.send(err);
+                        return;
+                    } else {
+                        console.log("Downvote on Image "+imageId+" by "+username+" removed because of upvote");
+                    }
+                });
+            }
+            res.send({statusCode: 200});
         }
     });
-    if (!upvoted) { //add upvote
-        Image.updateOne({"imageId": req.params.imageId}, {$push: {upvoters: req.params.userId}, $pull: {downvoters: req.params.userId}, $inc: {upvotes: 1}}, function(err, data) {
-            if (err) {
-                console.log(err);
-                res.send(err);
-                return;
-            } else {
-                // res.send("Upvoted! ", data);
-                // console.log("Upvoted! ", data);
-                returnString += "Upvoted"
-            }
-        });
-    } else { //already upvoted. remove it
-        Image.updateOne({"imageId": req.params.imageId}, {$pull: {upvoters: req.params.userId}, $inc: {upvotes: -1}}, function(err, data) {
-            if (err) {
-                console.log(err);
-                res.send(err);
-                return;
-            } else {
-                // res.send("Removed upvote ", data);
-                // console.log("Removed upvote ", data);
-                returnString += "Removed upvote "
-            }
-        });
-    }
-    if (downvoted) { //remove downvote
-        Image.updateOne({"imageId": req.params.imageId}, {$pull: {downvoters: req.params.userId}, $inc: {downvotes: -1}}, function(err, data) {
-            if (err) {
-                console.log(err);
-                res.send(err);
-                return;
-            } else {
-                // res.send("Removed downvote ", data);
-                // console.log("Removed downvote ", data);
-                returnString += " and removed downvote ";
-            }
-        });
-    }
-    res.send(returnString);
-    console.log(returnString);
 });
 
 
@@ -153,12 +125,11 @@ app.post('/postComment', function(req, res){
         };
         Comment.create(commentData, function (err, user) {
             if (err) {
-                res.send(err);
                 console.log(err);
+                res.send(err);
             } else {
-                console.log("Created comment");
-                const response = { statusCode: 200 }
-                res.send(response);
+                console.log("Created comment", req.body.content);
+                res.send(({statusCode: 200}));
             }
         });
     } else {
@@ -172,16 +143,16 @@ app.get('/getComments/:id', function(req, res) {
         if (err) {
             console.log(err);
             res.send(err);
-        } else if (comments) {
-            console.log(comments);
+        } else if (!comments) {
+            console.log("Image id not found");
+            res.send("Image id not found");
+        } else {
             const response = {
                 statusCode: 200,
                 comments: comments
             }
+            console.log(comments);
             res.send(comments);
-        } else {
-            console.log("Image id not found");
-            res.send("Image id not found");
         }
     });
 });
@@ -192,12 +163,12 @@ app.delete('/deleteComment/:id', function(req, res) {
         if (err) {
             console.log(err);
             res.send(err);
-        } else if (removed) {
-            console.log("Comment removed: ", removed);
-            res.send({ statusCode: 200 });
-        } else {
+        } else if (!removed) {
             console.log("Comment not found to delete");
             res.send("Comment not found to delete");
+        } else {
+            console.log("Comment removed: ", removed);
+            res.send({ statusCode: 200 });
         }
     });
 });
@@ -214,30 +185,14 @@ if (req.body.email && req.body.username &&
         }
         User.create(userData, function (err, user) {
             if (err) {
-                res.send(err);
                 console.log(err);
+                res.send(err);
             } else {
                 console.log("Created user " + req.body.username);
                 res.send({ statusCode: 200 });
             }
         });
     }
-});
-
-
-app.delete('/deleteUser/:id', function(req, res) {
-    User.findByIdAndRemove(req.params.id, function(err, removed) {
-        if (err) {
-            console.log(err);
-            res.send(err);
-        } else if (removed) {
-            console.log("User removed: ", removed);
-            res.send({ statusCode: 200 });
-        } else {
-            console.log("Comment not found to delete");
-            res.send("Comment not found to delete");
-        }
-    });
 });
 
 
@@ -259,7 +214,10 @@ app.get('/signIn/:username/:password', function(req, res) {
         if (err) {
             console.log(err);
             res.send(err);
-        } else if (user) {
+        } else if (!user) {
+            console.log("Didn't find user");
+            res.send("Didn't find user");
+        } else {
             if (req.params.password === user.password) {
                 console.log(user.username, " signed in");
                 res.send({statusCode: 200});
@@ -268,9 +226,6 @@ app.get('/signIn/:username/:password', function(req, res) {
                 console.log("Password doesn't match");
                 res.send("Password doesn't match");
             }
-        } else {
-            console.log("Didn't find user");
-            res.send("Didn't find user");
         }
     });
 });
@@ -292,17 +247,17 @@ app.get('/getImage/:id', (req, res) => {
             //         res.send(err);
             //     }
             //     if (data) {
-            //         console.log("Data: ", data);
             //         data.Metadata = dbEntry;
             //         const response = {
             //             statusCode: 200,
             //             data: data
             //         }
+            //         console.log("Data: ", data);
             //         res.send(response);
             //     }
             // });
-            res.send(dbEntry);
             console.log(dbEntry);
+            res.send(dbEntry);
         }
     });
 });
@@ -313,3 +268,20 @@ app.get('/', (req, res) => {
 })
 
 app.listen(3000, () => console.log('Server is running'));
+
+
+
+
+// for (var i = 0; i<124; i++) {
+//     var imageData = {
+//         imageId: i,
+//     };
+//     Image.create(imageData, function (err, image) {
+//         if (err) {
+//             console.log(err);
+//         } else {
+//             console.log("Created image entry");
+//             const response = { statusCode: 200 }
+//         }
+//     });
+// }

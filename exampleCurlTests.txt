@@ -1,9 +1,9 @@
-curl -i -X POST -H 'Content-Type: application/json' -d '{"email": "example@example.com", "username": "someUserName", "password": "somePassword", "passwordConf": "somePassword"}' http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/createUser
+curl -i -X POST -H 'Content-Type: application/json' -d '{"email": "example@example.com", "username": "someUsername", "password": "somePassword", "passwordConf": "somePassword"}' http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/createUser
 
 curl -i -X GET http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/
 
 
-curl -i -X POST -H 'Content-Type: application/json' -d '{"imageId": "0", "content": "Generic comment.", "user": "5ae2444b8e0c663bfe61d71e"}' http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/postComment
+curl -i -X POST -H 'Content-Type: application/json' -d '{"imageId": "0", "content": "Generic comment.", "user": "someUsername"}' http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/postComment
 
 
 curl -i -X GET http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/getComments
@@ -12,4 +12,4 @@ curl -i -X DELETE http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/delete
 
 curl -i -X DELETE http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/deleteUser/5ae26e03e92be43ed95b1408
 
-curl -i -X PUT http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/upvoteImage/5ae2444b8e0c663bfe61d71e/0
+curl -i -X PUT http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/upvoteImage/someUsername/0
