@@ -16,7 +16,7 @@ mongoose.connect('mongodb://localhost/memesource');
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'Failed to connect to database'));
 db.once('open', function() {
-    console.log("We're connected");
+    console.log("Connected to Database");
 });
 
 var UserSchema = new mongoose.Schema({
@@ -44,9 +44,105 @@ var CommentSchema = new mongoose.Schema({
     user: { type: ObjectId, ref: User },
     date: { type: Date, default: Date.now },
     upvotes: { type: Number, default: 0 },
-    downvotes: { type: Number, default: 0 }
+    downvotes: { type: Number, default: 0 },
+    upvoters: [{ type: ObjectId, ref: User }],
+    downvoters: [{ type: ObjectId, ref: User }],
 });
 var Comment = mongoose.model('Comment', CommentSchema);
+
+var ImageSchema = new mongoose.Schema({
+    imageId: {type: Number, required: true, unique: true },
+    upvotes: { type: Number, default: 0 },
+    downvotes: { type: Number, default: 0 },
+    upvoters: [{ type: ObjectId, ref: User }],
+    downvoters: [{ type: ObjectId, ref: User }],
+    description: {type: String, default: ""},
+    tags: [String]
+});
+var Image = mongoose.model('Image', ImageSchema);
+
+
+// for (var i = 0; i<124; i++) {
+//     var imageData = {
+//         imageId: i,
+//     };
+//     Image.create(imageData, function (err, image) {
+//         if (err) {
+//             console.log(err);
+//         } else {
+//             console.log("Created image entry");
+//             const response = { statusCode: 200 }
+//         }
+//     });
+// }
+
+
+app.put('/upvoteImage/:userId/:imageId', function(req, res) {
+    var upvoted = false;
+    var downvoted = false;
+    var returnString = "";
+    Image.findOne({"imageId": req.params.imageId}, function(err, img) {
+        if (err) {
+            console.log(err);
+            res.send(err);
+            return;
+        } else if (img) {
+            console.log(typeof req.params.userId, typeof img.upvoters);
+            if (img.upvoters.includes(req.params.userId)) {
+                console.log("worked");
+                upvoted = true;
+            }
+            if (img.downvoters.includes(req.params.userId.toString())) {
+                downvoted = true;
+            }
+        } else {
+            console.log("Couldn't find image");
+            res.send("Couldn't find image");
+            return;
+        }
+    });
+    if (!upvoted) { //add upvote
+        Image.updateOne({"imageId": req.params.imageId}, {$push: {upvoters: req.params.userId}, $pull: {downvoters: req.params.userId}, $inc: {upvotes: 1}}, function(err, data) {
+            if (err) {
+                console.log(err);
+                res.send(err);
+                return;
+            } else {
+                // res.send("Upvoted! ", data);
+                // console.log("Upvoted! ", data);
+                returnString += "Upvoted"
+            }
+        });
+    } else { //already upvoted. remove it
+        Image.updateOne({"imageId": req.params.imageId}, {$pull: {upvoters: req.params.userId}, $inc: {upvotes: -1}}, function(err, data) {
+            if (err) {
+                console.log(err);
+                res.send(err);
+                return;
+            } else {
+                // res.send("Removed upvote ", data);
+                // console.log("Removed upvote ", data);
+                returnString += "Removed upvote "
+            }
+        });
+    }
+    if (downvoted) { //remove downvote
+        Image.updateOne({"imageId": req.params.imageId}, {$pull: {downvoters: req.params.userId}, $inc: {downvotes: -1}}, function(err, data) {
+            if (err) {
+                console.log(err);
+                res.send(err);
+                return;
+            } else {
+                // res.send("Removed downvote ", data);
+                // console.log("Removed downvote ", data);
+                returnString += " and removed downvote ";
+            }
+        });
+    }
+    res.send(returnString);
+    console.log(returnString);
+});
+
 
 app.post('/postComment', function(req, res){
     if ((req.body.imageId) && req.body.content && req.body.user) {
@@ -54,7 +150,7 @@ app.post('/postComment', function(req, res){
             imageId: req.body.imageId,
             content: req.body.content,
             user: req.body.user
-        }
+        };
         Comment.create(commentData, function (err, user) {
             if (err) {
                 res.send(err);
@@ -70,24 +166,29 @@ app.post('/postComment', function(req, res){
     }
 });
 
+
 app.get('/getComments/:id', function(req, res) {
     Comment.find({"imageId": req.params.id}, function(err, comments) {
         if (err) {
             console.log(err);
             res.send(err);
-        } else {
+        } else if (comments) {
             console.log(comments);
             const response = {
                 statusCode: 200,
                 comments: comments
             }
             res.send(comments);
+        } else {
+            console.log("Image id not found");
+            res.send("Image id not found");
         }
     });
 });
 
-app.delete('/deleteComment/:commentId', function(req, res) {
-    Comment.findByIdAndRemove(req.params.commentId, function(err, removed) {
+
+app.delete('/deleteComment/:id', function(req, res) {
+    Comment.findByIdAndRemove(req.params.id, function(err, removed) {
         if (err) {
             console.log(err);
             res.send(err);
@@ -100,6 +201,7 @@ app.delete('/deleteComment/:commentId', function(req, res) {
         }
     });
 });
+
 
 app.post('/createUser', function(req, res){
 if (req.body.email && req.body.username &&
@@ -122,8 +224,9 @@ if (req.body.email && req.body.username &&
     }
 });
 
-app.delete('/deleteUser/:userId', function(req, res) {
-    User.findByIdAndRemove(req.params.userId, function(err, removed) {
+
+app.delete('/deleteUser/:id', function(req, res) {
+    User.findByIdAndRemove(req.params.id, function(err, removed) {
         if (err) {
             console.log(err);
             res.send(err);
@@ -137,6 +240,7 @@ app.delete('/deleteUser/:userId', function(req, res) {
     });
 });
 
+
 app.get('/listUsers', function(req, res) {
     User.find(function(err, users) {
         if (err) {
@@ -148,6 +252,7 @@ app.get('/listUsers', function(req, res) {
         }
     });
 });
+
 
 app.get('/signIn/:username/:password', function(req, res) {
     User.findOne({"username": req.params.username}, function(err, user) {
@@ -171,34 +276,40 @@ app.get('/signIn/:username/:password', function(req, res) {
 });
 
 
-
 app.get('/getImage/:id', (req, res) => {
-    var params = {
-        Bucket: 'memesourceimages',
-        Key : req.params.id+'.jpg'
-    };
-
-    s3.getObject(params, function (err, data) {
-    //handle error
-    if (err) {
-        console.log("Error: ", err);
-        res.send(err);
-    }
-    if (data) {
-        console.log("Data: ", data);
-        const response = {
-            statusCode: 200,
-            data: data
+    Image.findOne({"imageId": req.params.id}, function(err, dbEntry) {
+        if (err) {
+            console.log(err);
+            res.send(err);
+        } else {
+            var params = {
+                Bucket: 'memesourceimages',
+                Key : req.params.id+'.jpg'
+            };
+            // s3.getObject(params, function (err, data) {
+            //     if (err) {
+            //         console.log("Error: ", err);
+            //         res.send(err);
+            //     }
+            //     if (data) {
+            //         console.log("Data: ", data);
+            //         data.Metadata = dbEntry;
+            //         const response = {
+            //             statusCode: 200,
+            //             data: data
+            //         }
+            //         res.send(response);
+            //     }
+            // });
+            res.send(dbEntry);
+            console.log(dbEntry);
         }
-        res.send(response);
-    }
     });
-    console.log("req: ", req.query);
-})
+});
 
 app.get('/', (req, res) => {
     console.log('Welcome to memesource');
     res.send('Welcome to memesource');
 })
 
-app.listen(3000, () => console.log('Server running on port 3000'));
+app.listen(3000, () => console.log('Server is running'));

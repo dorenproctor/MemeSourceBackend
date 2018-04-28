@@ -11,3 +11,5 @@ curl -i -X GET http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/getCommen
 curl -i -X DELETE http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/deleteComment/5ae2b64b6f26a2455fac46a6
 
 curl -i -X DELETE http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/deleteUser/5ae26e03e92be43ed95b1408
+
+curl -i -X PUT http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/upvoteImage/5ae2444b8e0c663bfe61d71e/0
