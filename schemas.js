@@ -20,9 +20,9 @@ var UserSchema = new mongoose.Schema({
 });
 
 var CommentSchema = new mongoose.Schema({
-    imageId: {type: Number, required: true },
+    imageId: { type: Number, required: true },
     content: { type: String, required: true },
-    user: String,
+    user: { type: String, required: true },
     date: { type: Date, default: Date.now },
     upvotes: { type: Number, default: 0 },
     downvotes: { type: Number, default: 0 },

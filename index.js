@@ -2,6 +2,7 @@
 
 const express = require('express');
 const app = express();
+const fs = require('fs');
 const AWS = require('aws-sdk');
 const s3 = new AWS.S3();
 const mongoose = require('mongoose');
@@ -51,25 +52,29 @@ app.get('/imageInfo/:id', function(req, res) {
 
 
 app.get('/getImage/:id', function(req, res) {
-    var params = {
-        Bucket: 'memesourceimages',
-        Key : req.params.id+'.jpg'
-    };
-    s3.getObject(params, function (err, data) {
-        if (err) {
-            console.log("Error: ", err);
-            res.send(err);
-        }
-        if (data) {
-            // data.Metadata = dbEntry;
-            const response = {
-                    statusCode: 200,
-                data: data
-            }
-            console.log("Data: ", data);
-            res.send(response);
-        }
-    });
+    // var params = {
+    //     Bucket: 'memesourceimages',
+    //     Key : req.params.id+'.jpg'
+    // };
+    // s3.getObject(params, function (err, data) {
+    //     if (err) {
+    //         console.log("Error: ", err);
+    //         res.send(err);
+    //     }
+    //     if (data) {
+    //         // data.Metadata = dbEntry;
+    //         // const response = {
+    //         //         statusCode: 200,
+    //         //     data: data
+    //         // }
+    //         console.log("Data: ", data);
+    //         res.send(data);
+    //     }
+    // });
+    console.log("Sending image "+req.params.id);
+    var img = fs.readFileSync('./img/'+req.params.id+'.jpg');
+    res.writeHead(200, {'Content-Type': 'image/jpg' });
+    res.end(img, 'binary');
 });
 
 
@@ -94,7 +99,7 @@ app.get('/commentInfo/:id', function(req, res) {
 
 
 app.post('/postComment', function(req, res){
-    if ((req.body.imageId) && req.body.content && req.body.user) {
+    if (req.body.imageId && req.body.content && req.body.user) {
         var commentData = {
             imageId: req.body.imageId,
             content: req.body.content,
@@ -106,7 +111,7 @@ app.post('/postComment', function(req, res){
                 res.send(err);
             } else {
                 console.log("Created comment", req.body.content);
-                res.send(({statusCode: 200}));
+                res.send({statusCode: 200});
             }
         });
     } else {
@@ -140,7 +145,7 @@ if (req.body.email && req.body.username &&
             password: req.body.password,
             passwordConf: req.body.passwordConf,
         }
-        User.create(userData, function (err, user) {
+        UserModel.create(userData, function (err, user) {
             if (err) {
                 console.log(err);
                 res.send(err);
@@ -154,7 +159,7 @@ if (req.body.email && req.body.username &&
 
 
 app.get('/listUsers', function(req, res) {
-    User.find(function(err, users) {
+    UserModel.find(function(err, users) {
         if (err) {
             console.log(err);
             res.send(err);
@@ -167,7 +172,7 @@ app.get('/listUsers', function(req, res) {
 
 
 app.get('/signIn/:username/:password', function(req, res) {
-    User.findOne({"username": req.params.username}, function(err, user) {
+    UserModel.findOne({"username": req.params.username}, function(err, user) {
         if (err) {
             console.log(err);
             res.send(err);
