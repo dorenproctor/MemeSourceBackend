@@ -27,6 +27,7 @@ db.once('open', function() {
 /* available commands:
     /imageInfo/:id
     /getImage/:id
+    /urls
     /commentInfo/:id
     /postComment //takes a json object with post call
     /deleteComment/:id
@@ -77,6 +78,23 @@ app.get('/getImage/:id', function(req, res) {
     res.end(img, 'binary');
 });
 
+app.get('/urls', function(req, res) {
+    ImageModel.find({}, {imageId: 1, _id: 0}, function(err, imgs) {
+        if (err) {
+            console.log(err);
+            res.send(err);
+        } else {
+            var urls = imgs.map(obj => {
+                var newObj = {};
+                var string = "http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/getImage/"+obj.imageId;
+                newObj["url"] = string;
+                return newObj;
+            });
+            res.send({urls: urls});
+        }
+    }).sort( { imageId: 1 } );
+});
+
 
 app.get('/commentInfo/:id', function(req, res) {
     CommentModel.find({"imageId": req.params.id}, function(err, comments) {
@@ -87,10 +105,10 @@ app.get('/commentInfo/:id', function(req, res) {
             console.log("Image id not found");
             res.send("Image id not found");
         } else {
-            const response = {
-                statusCode: 200,
-                comments: comments
-            }
+            // const response = {
+            //     statusCode: 200,
+            //     comments: comments
+            // }
             console.log(comments);
             res.send(comments);
         }
