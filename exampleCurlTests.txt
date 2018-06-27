@@ -2,11 +2,11 @@ curl -i -X POST -H 'Content-Type: application/json' -d '{"email": "example@examp
 
 curl -i -X GET http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/
 
-
 curl -i -X POST -H 'Content-Type: application/json' -d '{"imageId": "0", "content": "Generic comment.", "user": "someUsername"}' http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/postComment
 
+curl -i -X GET http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/imageInfo/0
 
-curl -i -X GET http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/getComments
+curl -i -X GET http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/commentInfo/0
 
 curl -i -X DELETE http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/deleteComment/5ae2b64b6f26a2455fac46a6
 
