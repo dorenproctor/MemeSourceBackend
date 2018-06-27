@@ -1,4 +1,6 @@
-curl -i -X POST -H 'Content-Type: application/json' -d '{"email": "example@example.com", "username": "someUsername", "password": "somePassword", "passwordConf": "somePassword"}' http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/createUser
+curl -i -X POST -H 'Content-Type: application/json' -d '{"email": "example1@example.com", "username": "aUsername", "password": "aPassword"}' http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/createUser
+
+curl -i -X POST -H 'Content-Type: application/json' -d '{"username": "aUsername", "password": "aPassword"}' http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/SignIn
 
 curl -i -X GET http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/
 
