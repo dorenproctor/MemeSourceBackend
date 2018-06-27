@@ -156,22 +156,21 @@ app.delete('/deleteComment/:id', function (req, res) {
 
 app.post('/createUser', function (req, res) {
     if (req.body.email && req.body.username &&
-        req.body.password && req.body.passwordConf) {
-        var userData = {
-            email: req.body.email,
-            username: req.body.username,
-            password: req.body.password,
-            passwordConf: req.body.passwordConf,
-        }
-        User.create(userData, function (err, user) {
-            if (err) {
-                console.log(err);
-                res.send(err);
-            } else {
-                console.log("Created user " + req.body.username);
-                res.send({ statusCode: 200 });
-            }
-        });
+        req.body.password) {
+      var userData = {
+          email: req.body.email,
+          username: req.body.username,
+          password: req.body.password,
+      }
+      User.create(userData, function (err, user) {
+          if (err) {
+              console.log(err);
+              res.send(err);
+          } else {
+              console.log("Created user " + req.body.username);
+              res.send({ statusCode: 200 });
+          }
+      });
     }
 });
 
