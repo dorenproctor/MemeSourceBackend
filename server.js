@@ -9,9 +9,9 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const schemas = require('./schemas');
 
-var UserModel = mongoose.model('User', schemas.User);
-var CommentModel = mongoose.model('Comment', schemas.Comment);
-var ImageModel = mongoose.model('Image', schemas.Image);
+var User = mongoose.model('User', schemas.User);
+var Comment = mongoose.model('Comment', schemas.Comment);
+var Image = mongoose.model('Image', schemas.Image);
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -40,7 +40,7 @@ db.once('open', function () {
 
 
 app.get('/imageInfo/:id', function(req, res) {
-    ImageModel.findOne({"imageId": req.params.id}, function(err, dbEntry) {
+    Image.findOne({"imageId": req.params.id}, function(err, dbEntry) {
         if (err) {
             console.log(err);
             res.send(err);
@@ -79,7 +79,7 @@ app.get('/getImage/:id', function(req, res) {
 });
 
 app.get('/urls', function (req, res) {
-    ImageModel.find({}, { imageId: 1, _id: 0 }, function (err, imgs) {
+    Image.find({}, { imageId: 1, _id: 0 }, function (err, imgs) {
         if (err) {
             console.log(err);
             res.send(err);
@@ -97,7 +97,7 @@ app.get('/urls', function (req, res) {
 
 
 app.get('/commentInfo/:id', function (req, res) {
-    CommentModel.find({ "imageId": req.params.id }, function (err, comments) {
+    Comment.find({ "imageId": req.params.id }, function (err, comments) {
         if (err) {
             console.log(err);
             res.send(err);
@@ -123,7 +123,7 @@ app.post('/postComment', function (req, res) {
             content: req.body.content,
             user: req.body.user
         };
-        CommentModel.create(commentData, function (err, user) {
+        Comment.create(commentData, function (err, user) {
             if (err) {
                 console.log(err);
                 res.send(err);
@@ -139,7 +139,7 @@ app.post('/postComment', function (req, res) {
 
 
 app.delete('/deleteComment/:id', function (req, res) {
-    CommentModel.findByIdAndRemove(req.params.id, function (err, removed) {
+    Comment.findByIdAndRemove(req.params.id, function (err, removed) {
         if (err) {
             console.log(err);
             res.send(err);
@@ -163,7 +163,7 @@ app.post('/createUser', function (req, res) {
             password: req.body.password,
             passwordConf: req.body.passwordConf,
         }
-        UserModel.create(userData, function (err, user) {
+        User.create(userData, function (err, user) {
             if (err) {
                 console.log(err);
                 res.send(err);
@@ -177,7 +177,7 @@ app.post('/createUser', function (req, res) {
 
 
 app.get('/listUsers', function (req, res) {
-    UserModel.find(function (err, users) {
+    User.find(function (err, users) {
         if (err) {
             console.log(err);
             res.send(err);
@@ -190,7 +190,7 @@ app.get('/listUsers', function (req, res) {
 
 
 app.get('/signIn/:username/:password', function (req, res) {
-    UserModel.findOne({ "username": req.params.username }, function (err, user) {
+    User.findOne({ "username": req.params.username }, function (err, user) {
         if (err) {
             console.log(err);
             res.send(err);
@@ -219,7 +219,7 @@ app.put('/upvoteImage/:username/:imageId', function (req, res) {
     var imageId = req.params.imageId;
     var upvoted = false;
     var downvoted = false;
-    ImageModel.findOne({ "imageId": imageId }, function (err, img) {
+    Image.findOne({ "imageId": imageId }, function (err, img) {
         if (err) {
             console.log(err);
             res.send(err);
@@ -230,7 +230,7 @@ app.put('/upvoteImage/:username/:imageId', function (req, res) {
             if (img.upvoters.includes(username)) { upvoted = true; }
             if (img.downvoters.includes(username)) { downvoted = true; }
             if (!upvoted) { //add upvote
-                ImageModel.updateOne({ "imageId": imageId }, { $push: { upvoters: username }, $inc: { upvotes: 1 } }, function (err, data) {
+                Image.updateOne({ "imageId": imageId }, { $push: { upvoters: username }, $inc: { upvotes: 1 } }, function (err, data) {
                     if (err) {
                         console.log(err);
                         res.send(err);
@@ -240,7 +240,7 @@ app.put('/upvoteImage/:username/:imageId', function (req, res) {
                     }
                 });
             } else { //already upvoted. remove it
-                ImageModel.updateOne({ "imageId": imageId }, { $pull: { upvoters: username }, $inc: { upvotes: -1 } }, function (err, data) {
+                Image.updateOne({ "imageId": imageId }, { $pull: { upvoters: username }, $inc: { upvotes: -1 } }, function (err, data) {
                     if (err) {
                         console.log(err);
                         res.send(err);
@@ -251,7 +251,7 @@ app.put('/upvoteImage/:username/:imageId', function (req, res) {
                 });
             }
             if (downvoted) { //remove downvote
-                ImageModel.updateOne({ "imageId": imageId }, { $pull: { downvoters: username }, $inc: { downvotes: -1 } }, function (err, data) {
+                Image.updateOne({ "imageId": imageId }, { $pull: { downvoters: username }, $inc: { downvotes: -1 } }, function (err, data) {
                     if (err) {
                         console.log(err);
                         res.send(err);
@@ -272,7 +272,7 @@ app.put('/downvoteImage/:username/:imageId', function (req, res) {
     var imageId = req.params.imageId;
     var upvoted = false;
     var downvoted = false;
-    ImageModel.findOne({ "imageId": imageId }, function (err, img) {
+    Image.findOne({ "imageId": imageId }, function (err, img) {
         if (err) {
             console.log(err);
             res.send(err);
@@ -283,7 +283,7 @@ app.put('/downvoteImage/:username/:imageId', function (req, res) {
             if (img.upvoters.includes(username)) { upvoted = true; }
             if (img.downvoters.includes(username)) { downvoted = true; }
             if (!downvoted) { //add upvote
-                ImageModel.updateOne({ "imageId": imageId }, { $push: { downvoters: username }, $inc: { downvotes: 1 } }, function (err, data) {
+                Image.updateOne({ "imageId": imageId }, { $push: { downvoters: username }, $inc: { downvotes: 1 } }, function (err, data) {
                     if (err) {
                         console.log(err);
                         res.send(err);
@@ -293,7 +293,7 @@ app.put('/downvoteImage/:username/:imageId', function (req, res) {
                     }
                 });
             } else { //already upvoted. remove it
-                ImageModel.updateOne({ "imageId": imageId }, { $pull: { downvoters: username }, $inc: { downvotes: -1 } }, function (err, data) {
+                Image.updateOne({ "imageId": imageId }, { $pull: { downvoters: username }, $inc: { downvotes: -1 } }, function (err, data) {
                     if (err) {
                         console.log(err);
                         res.send(err);
@@ -304,7 +304,7 @@ app.put('/downvoteImage/:username/:imageId', function (req, res) {
                 });
             }
             if (upvoted) { //remove downvote
-                ImageModel.updateOne({ "imageId": imageId }, { $pull: { upvoters: username }, $inc: { upvotes: -1 } }, function (err, data) {
+                Image.updateOne({ "imageId": imageId }, { $pull: { upvoters: username }, $inc: { upvotes: -1 } }, function (err, data) {
                     if (err) {
                         console.log(err);
                         res.send(err);
@@ -336,7 +336,7 @@ app.listen(3000, () => console.log('Server is running'));
 //     var imageData = {
 //         imageId: i,
 //     };
-//     ImageModel.create(imageData, function (err, image) {
+//     Image.create(imageData, function (err, image) {
 //         if (err) {
 //             console.log(err);
 //         } else {
