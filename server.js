@@ -44,10 +44,10 @@ app.get('/imageInfo/:id', function (req, res) {
   Image.findOne({ "imageId": req.params.id }, function (err, dbEntry) {
     if (err) {
       console.log(err)
-      res.send(err)
+      res.send({ statusCode: 400, message: err })
     } else {
       console.log(dbEntry)
-      res.send(dbEntry)
+      res.send({ statusCode: 200, content: dbEntry })
     }
   })
 })
@@ -61,7 +61,7 @@ app.get('/getImage/:id', function (req, res) {
   // s3.getObject(params, function (err, data) {
   //     if (err) {
   //         console.log("Error: ", err)
-  //         res.send(err)
+  //         res.send({ statusCode: 400, message: err })
   //     }
   //     if (data) {
   //         // data.Metadata = dbEntry
@@ -83,7 +83,7 @@ app.get('/urls', function (req, res) {
   Image.find({}, { imageId: 1, _id: 0 }, function (err, imgs) {
     if (err) {
       console.log(err)
-      res.send(err)
+      res.send({ statusCode: 400, message: err })
     } else {
       var urls = imgs.map(obj => {
         var newObj = {}
@@ -91,7 +91,7 @@ app.get('/urls', function (req, res) {
         newObj["url"] = string
         return newObj
       })
-      res.send({ urls: urls })
+      res.send({ statusCode: 200, content: urls })
     }
   }).sort({ imageId: 1 })
 })
@@ -101,7 +101,7 @@ app.get('/commentInfo/:id', function (req, res) {
   Comment.find({ "imageId": req.params.id }, function (err, comments) {
     if (err) {
       console.log(err)
-      res.send(err)
+      res.send({ statusCode: 400, message: err })
     } else if (!comments) {
       console.log("Image id not found")
       res.send({ statusCode: 400, message: "Image id not found" })
@@ -111,7 +111,7 @@ app.get('/commentInfo/:id', function (req, res) {
       //     comments: comments
       // }
       console.log(comments)
-      res.send(comments)
+      res.send({ statusCode: 200, content: comments })
     }
   })
 })
@@ -127,7 +127,7 @@ app.post('/postComment', function (req, res) {
     Comment.create(commentData, function (err, user) {
       if (err) {
         console.log(err)
-        res.send(err)
+        res.send({ statusCode: 400, message: err })
       } else {
         console.log("Created comment", req.body.content)
         res.send({ statusCode: 200 })
@@ -143,7 +143,7 @@ app.delete('/deleteComment/:id', function (req, res) {
   Comment.findByIdAndRemove(req.params.id, function (err, removed) {
     if (err) {
       console.log(err)
-      res.send(err)
+      res.send({ statusCode: 400, message: err })
     } else if (!removed) {
       console.log("Comment not found to delete")
       res.send({ statusCode: 400, message: "Comment not found to delete" })
@@ -170,7 +170,7 @@ app.post('/createUser', function (req, res) {
       User.create(userData, function (err, user) {
         if (err) {
           console.log(err)
-          res.send(err)
+          res.send({ statusCode: 400, message: err })
         } else {
           console.log("Created user " + req.body.username)
           res.send({ statusCode: 200 })
@@ -185,10 +185,10 @@ app.get('/listUsers', function (req, res) {
   User.find(function (err, users) {
     if (err) {
       console.log(err)
-      res.send(err)
+      res.send({ statusCode: 400, message: err })
     } else {
       console.log(users)
-      res.send(users)
+      res.send({ statusCode: 200, content: users })
     }
   })
 })
@@ -203,7 +203,7 @@ app.post('/signIn', function (req, res) {
   User.findOne({ "username": username }, function (err, user) {
     if (err) {
       console.log(err)
-      res.send(err)
+      res.send({ statusCode: 400, message: err })
     } else if (!user) {
       console.log("Did not find user: ", username)
       res.send({ statusCode: 400, message: "Did not find user" })
@@ -233,7 +233,7 @@ app.put('/upvoteImage/:username/:imageId', function (req, res) {
   Image.findOne({ "imageId": imageId }, function (err, img) {
     if (err) {
       console.log(err)
-      res.send(err)
+      res.send({ statusCode: 400, message: err })
     } else if (!img) {
       console.log("Could not find image")
       res.send({ statusCode: 400, message: "Could not find image" })
@@ -244,7 +244,7 @@ app.put('/upvoteImage/:username/:imageId', function (req, res) {
         Image.updateOne({ "imageId": imageId }, { $push: { upvoters: username }, $inc: { upvotes: 1 } }, function (err, data) {
           if (err) {
             console.log(err)
-            res.send(err)
+            res.send({ statusCode: 400, message: err })
             return
           } else {
             console.log(username + " upvoted " + imageId)
@@ -254,7 +254,7 @@ app.put('/upvoteImage/:username/:imageId', function (req, res) {
         Image.updateOne({ "imageId": imageId }, { $pull: { upvoters: username }, $inc: { upvotes: -1 } }, function (err, data) {
           if (err) {
             console.log(err)
-            res.send(err)
+            res.send({ statusCode: 400, message: err })
             return
           } else {
             console.log(username + " removed upvote on Image" + imageId)
@@ -265,7 +265,7 @@ app.put('/upvoteImage/:username/:imageId', function (req, res) {
         Image.updateOne({ "imageId": imageId }, { $pull: { downvoters: username }, $inc: { downvotes: -1 } }, function (err, data) {
           if (err) {
             console.log(err)
-            res.send(err)
+            res.send({ statusCode: 400, message: err })
             return
           } else {
             console.log("Downvote on Image " + imageId + " by " + username + " removed because of upvote")
@@ -286,7 +286,7 @@ app.put('/downvoteImage/:username/:imageId', function (req, res) {
   Image.findOne({ "imageId": imageId }, function (err, img) {
     if (err) {
       console.log(err)
-      res.send(err)
+      res.send({ statusCode: 400, message: err })
     } else if (!img) {
       console.log("Could not find image")
       res.send({ statusCode: 400, message: "Could not find image" })
@@ -297,7 +297,7 @@ app.put('/downvoteImage/:username/:imageId', function (req, res) {
         Image.updateOne({ "imageId": imageId }, { $push: { downvoters: username }, $inc: { downvotes: 1 } }, function (err, data) {
           if (err) {
             console.log(err)
-            res.send(err)
+            res.send({ statusCode: 400, message: err })
             return
           } else {
             console.log(username + " downvoted " + imageId)
@@ -307,7 +307,7 @@ app.put('/downvoteImage/:username/:imageId', function (req, res) {
         Image.updateOne({ "imageId": imageId }, { $pull: { downvoters: username }, $inc: { downvotes: -1 } }, function (err, data) {
           if (err) {
             console.log(err)
-            res.send(err)
+            res.send({ statusCode: 400, message: err })
             return
           } else {
             console.log(username + " removed downvote on Image" + imageId)
@@ -318,7 +318,7 @@ app.put('/downvoteImage/:username/:imageId', function (req, res) {
         Image.updateOne({ "imageId": imageId }, { $pull: { upvoters: username }, $inc: { upvotes: -1 } }, function (err, data) {
           if (err) {
             console.log(err)
-            res.send(err)
+            res.send({ statusCode: 400, message: err })
             return
           } else {
             console.log("Upvote on Image " + imageId + " by " + username + " removed because of downvote")
@@ -335,7 +335,7 @@ app.put('/downvoteImage/:username/:imageId', function (req, res) {
 
 app.get('/', (req, res) => {
   console.log('Welcome to memesource')
-  res.send('Welcome to memesource')
+  res.send({ statusCode: 200 , message: 'Welcome to memesource' })
 })
 
 app.listen(3000, () => console.log('Server is running'))
