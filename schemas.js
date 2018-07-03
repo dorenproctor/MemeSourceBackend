@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require('mongoose')
 
 // Why are schemas and models capitalize?
 // No clue. That's the way it's done in the docs and examples.
@@ -16,7 +16,7 @@ var UserSchema = new mongoose.Schema({
         trim: true
     },
     password: { type: String, required: true }
-});
+})
 
 var CommentSchema = new mongoose.Schema({
     imageId: { type: Number, required: true },
@@ -27,7 +27,7 @@ var CommentSchema = new mongoose.Schema({
     downvotes: { type: Number, default: 0 },
     upvoters: [String],
     downvoters: [String],
-});
+})
 
 var ImageSchema = new mongoose.Schema({
     imageId: {type: Number, required: true, unique: true },
@@ -37,7 +37,7 @@ var ImageSchema = new mongoose.Schema({
     downvoters: [String],
     description: {type: String, default: ""},
     tags: [String]
-});
+})
 
 module.exports = {
     User: UserSchema,
