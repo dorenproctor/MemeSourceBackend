@@ -104,7 +104,7 @@ app.get('/commentInfo/:id', function (req, res) {
       res.send(err);
     } else if (!comments) {
       console.log("Image id not found");
-      res.send("Image id not found");
+      res.send({ statusCode: 400, message: "Image id not found" });
     } else {
       // const response = {
       //     statusCode: 200,
@@ -134,7 +134,7 @@ app.post('/postComment', function (req, res) {
       }
     });
   } else {
-    res.send("The proper parameters were not passed");
+    res.send({ statusCode: 400, message: "The proper parameters were not passed" });
   }
 });
 
@@ -146,7 +146,7 @@ app.delete('/deleteComment/:id', function (req, res) {
       res.send(err);
     } else if (!removed) {
       console.log("Comment not found to delete");
-      res.send("Comment not found to delete");
+      res.send({ statusCode: 400, message: "Comment not found to delete" });
     } else {
       console.log("Comment removed: ", removed);
       res.send({ statusCode: 200 });
@@ -158,7 +158,7 @@ app.delete('/deleteComment/:id', function (req, res) {
 app.post('/createUser', function (req, res) {
   if (!req.body.email || !req.body.username ||
     !req.body.password) {
-      res.send("Email, username and password required");
+      res.send({ statusCode: 400, message: "Email, username and password required" });
   } else {
     bcrypt.hash(req.body.password, 12).then(function(hash) {
       console.log("ASFSDFSDF ", hash);
@@ -196,7 +196,7 @@ app.get('/listUsers', function (req, res) {
 
 app.post('/signIn', function (req, res) {
   if (!req.body.username || !req.body.password) {
-    res.send("Username and password required");
+    res.send({ statusCode: 400, message: "Username and password required" });
   }
   const username = req.body.username;
   const password = req.body.password;
@@ -205,16 +205,16 @@ app.post('/signIn', function (req, res) {
       console.log(err);
       res.send(err);
     } else if (!user) {
-      console.log("Didn't find user: ", username);
-      res.send("Didn't find user");
+      console.log("Did not find user: ", username);
+      res.send({ statusCode: 400, message: "Did not find user" });
     } else {
       bcrypt.compare(password, user.password).then(function(result) {
         if (result) {
           console.log(user.username, " signed in");
-          res.send({ statusCode: 200 });
+          res.send({ statusCode: 200, message: "Sign In verified" });
         } else {
-          console.log("Password doesn't match");
-          res.send("Password doesn't match");
+          console.log("Password does not match");
+          res.send({ statusCode: 400, message: "Password does not match" });
         }
       });
     }
@@ -235,8 +235,8 @@ app.put('/upvoteImage/:username/:imageId', function (req, res) {
       console.log(err);
       res.send(err);
     } else if (!img) {
-      console.log("Couldn't find image");
-      res.send("Couldn't find image");
+      console.log("Could not find image");
+      res.send({ statusCode: 400, message: "Could not find image" });
     } else {
       if (img.upvoters.includes(username)) { upvoted = true; }
       if (img.downvoters.includes(username)) { downvoted = true; }
@@ -288,8 +288,8 @@ app.put('/downvoteImage/:username/:imageId', function (req, res) {
       console.log(err);
       res.send(err);
     } else if (!img) {
-      console.log("Couldn't find image");
-      res.send("Couldn't find image");
+      console.log("Could not find image");
+      res.send({ statusCode: 400, message: "Could not find image" });
     } else {
       if (img.upvoters.includes(username)) { upvoted = true; }
       if (img.downvoters.includes(username)) { downvoted = true; }
