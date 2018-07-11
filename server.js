@@ -225,111 +225,148 @@ app.post('/signIn', function (req, res) {
 
 
 
-app.put('/upvoteImage/:username/:imageId', function (req, res) {
-  var username = req.params.username
-  var imageId = req.params.imageId
+app.put('/upvoteImage', function (req, res) {
+  var username = req.body.username
+  var imageId = req.body.imageId
   var upvoted = false
   var downvoted = false
-  Image.findOne({ "imageId": imageId }, function (err, img) {
+  User.findOne({ "username": username }, function (err, user) {
     if (err) {
       console.log(err)
-      res.send({ statusCode: 400, message: err })
-    } else if (!img) {
-      console.log("Could not find image")
-      res.send({ statusCode: 400, message: "Could not find image" })
+      res.send({statusCode: 400, message: err})
+      return
+    } else if (!user) {
+      console.log(err)
+      res.send({statusCode: 400, message: "User not found"})
     } else {
-      if (img.upvoters.includes(username)) { upvoted = true }
-      if (img.downvoters.includes(username)) { downvoted = true }
-      if (!upvoted) { //add upvote
-        Image.updateOne({ "imageId": imageId }, { $push: { upvoters: username }, $inc: { upvotes: 1 } }, function (err, data) {
+      Image.findOne({ "imageId": imageId }, function (err, img) {
+        if (err) {
+          console.log(err)
+          res.send({ statusCode: 400, message: err })
+          return
+        } else if (!img) {
+          console.log("Could not find image")
+          res.send({ statusCode: 400, message: "Could not find image" })
+          return
+        } else {
+          if (img.upvoters.includes(username)) { upvoted = true }
+          if (img.downvoters.includes(username)) { downvoted = true }
+          if (!upvoted) { //add upvote
+            Image.updateOne({ "imageId": imageId }, { $push: { upvoters: username }, $inc: { upvotes: 1 } }, function (err, data) {
+              if (err) {
+                console.log(err)
+                res.send({ statusCode: 400, message: err })
+                return
+              } else {
+                console.log(username + " upvoted " + imageId)
+              }
+            })
+          } else { //already upvoted. remove it
+            Image.updateOne({ "imageId": imageId }, { $pull: { upvoters: username }, $inc: { upvotes: -1 } }, function (err, data) {
+              if (err) {
+                console.log(err)
+                res.send({ statusCode: 400, message: err })
+                return
+              } else {
+                console.log(username + " removed upvote on Image" + imageId)
+              }
+            })
+          }
+          if (downvoted) { //remove downvote
+            Image.updateOne({ "imageId": imageId }, { $pull: { downvoters: username }, $inc: { downvotes: -1 } }, function (err, data) {
+              if (err) {
+                console.log(err)
+                res.send({ statusCode: 400, message: err })
+                return
+              } else {
+                console.log("Downvote on Image " + imageId + " by " + username + " removed because of upvote")
+              }
+            })
+          }
+        }
+        Image.findOne({ "imageId": imageId }, function (err, content) {
           if (err) {
-            console.log(err)
             res.send({ statusCode: 400, message: err })
             return
-          } else {
-            console.log(username + " upvoted " + imageId)
           }
+          res.send({ statusCode: 200, content: content })
         })
-      } else { //already upvoted. remove it
-        Image.updateOne({ "imageId": imageId }, { $pull: { upvoters: username }, $inc: { upvotes: -1 } }, function (err, data) {
-          if (err) {
-            console.log(err)
-            res.send({ statusCode: 400, message: err })
-            return
-          } else {
-            console.log(username + " removed upvote on Image" + imageId)
-          }
-        })
-      }
-      if (downvoted) { //remove downvote
-        Image.updateOne({ "imageId": imageId }, { $pull: { downvoters: username }, $inc: { downvotes: -1 } }, function (err, data) {
-          if (err) {
-            console.log(err)
-            res.send({ statusCode: 400, message: err })
-            return
-          } else {
-            console.log("Downvote on Image " + imageId + " by " + username + " removed because of upvote")
-          }
-        })
-      }
-      res.send({ statusCode: 200 })
+      })
     }
   })
 })
 
 
-app.put('/downvoteImage/:username/:imageId', function (req, res) {
-  var username = req.params.username
-  var imageId = req.params.imageId
+app.put('/downvoteImage', function (req, res) {
+  var username = req.body.username
+  var imageId = req.body.imageId
   var upvoted = false
   var downvoted = false
-  Image.findOne({ "imageId": imageId }, function (err, img) {
+  User.findOne({ "username": username }, function (err, user) {
     if (err) {
       console.log(err)
-      res.send({ statusCode: 400, message: err })
-    } else if (!img) {
-      console.log("Could not find image")
-      res.send({ statusCode: 400, message: "Could not find image" })
+      res.send({statusCode: 400, message: err})
+      return
+    } else if (!user) {
+      console.log(err)
+      res.send({statusCode: 400, message: "User not found"})
     } else {
-      if (img.upvoters.includes(username)) { upvoted = true }
-      if (img.downvoters.includes(username)) { downvoted = true }
-      if (!downvoted) { //add upvote
-        Image.updateOne({ "imageId": imageId }, { $push: { downvoters: username }, $inc: { downvotes: 1 } }, function (err, data) {
+      Image.findOne({ "imageId": imageId }, function (err, img) {
+        if (err) {
+          console.log(err)
+          res.send({ statusCode: 400, message: err })
+          return
+        } else if (!img) {
+          console.log("Could not find image")
+          res.send({ statusCode: 400, message: "Could not find image" })
+          return
+        } else {
+          if (img.upvoters.includes(username)) { upvoted = true }
+          if (img.downvoters.includes(username)) { downvoted = true }
+          if (!downvoted) { //add upvote
+            Image.updateOne({ "imageId": imageId }, { $push: { downvoters: username }, $inc: { downvotes: 1 } }, function (err, data) {
+              if (err) {
+                console.log(err)
+                res.send({ statusCode: 400, message: err })
+                return
+              } else {
+                console.log(username + " downvoted " + imageId)
+              }
+            })
+          } else { //already upvoted. remove it
+            Image.updateOne({ "imageId": imageId }, { $pull: { downvoters: username }, $inc: { downvotes: -1 } }, function (err, data) {
+              if (err) {
+                console.log(err)
+                res.send({ statusCode: 400, message: err })
+                return
+              } else {
+                console.log(username + " removed downvote on Image" + imageId)
+              }
+            })
+          }
+          if (upvoted) { //remove upvote
+            Image.updateOne({ "imageId": imageId }, { $pull: { upvoters: username }, $inc: { upvotes: -1 } }, function (err, data) {
+              if (err) {
+                console.log(err)
+                res.send({ statusCode: 400, message: err })
+                return
+              } else {
+                console.log("Upvote on Image " + imageId + " by " + username + " removed because of downvote")
+              }
+            })
+          }
+        }
+        Image.findOne({ "imageId": imageId }, function (err, content) {
           if (err) {
-            console.log(err)
             res.send({ statusCode: 400, message: err })
             return
-          } else {
-            console.log(username + " downvoted " + imageId)
           }
+          res.send({ statusCode: 200, content: content })
         })
-      } else { //already upvoted. remove it
-        Image.updateOne({ "imageId": imageId }, { $pull: { downvoters: username }, $inc: { downvotes: -1 } }, function (err, data) {
-          if (err) {
-            console.log(err)
-            res.send({ statusCode: 400, message: err })
-            return
-          } else {
-            console.log(username + " removed downvote on Image" + imageId)
-          }
-        })
-      }
-      if (upvoted) { //remove downvote
-        Image.updateOne({ "imageId": imageId }, { $pull: { upvoters: username }, $inc: { upvotes: -1 } }, function (err, data) {
-          if (err) {
-            console.log(err)
-            res.send({ statusCode: 400, message: err })
-            return
-          } else {
-            console.log("Upvote on Image " + imageId + " by " + username + " removed because of downvote")
-          }
-        })
-      }
-      res.send({ statusCode: 200 })
+      })
     }
   })
 })
-
 
 
 
