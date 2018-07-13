@@ -118,7 +118,7 @@ app.get('/commentInfo/:id', function (req, res) {
 
 
 app.post('/postComment', function (req, res) {
-  if (req.body.imageId && req.body.content && req.body.user) {
+  if (req.body.imageId != null && req.body.content && req.body.user) {
     var commentData = {
       imageId: req.body.imageId,
       content: req.body.content,
