@@ -3,8 +3,6 @@
 const express = require('express')
 const app = express()
 const fs = require('fs')
-const AWS = require('aws-sdk')
-const s3 = new AWS.S3()
 const mongoose = require('mongoose')
 const bodyParser = require('body-parser')
 const schemas = require('./schemas')
@@ -54,25 +52,6 @@ app.get('/imageInfo/:id', function (req, res) {
 
 
 app.get('/getImage/:id', function (req, res) {
-  // var params = {
-  //     Bucket: 'memesourceimages',
-  //     Key : req.params.id+'.jpg'
-  // }
-  // s3.getObject(params, function (err, data) {
-  //     if (err) {
-  //         console.log("Error: ", err)
-  //         res.send({ statusCode: 400, message: err })
-  //     }
-  //     if (data) {
-  //         // data.Metadata = dbEntry
-  //         // const response = {
-  //         //         statusCode: 200,
-  //         //     data: data
-  //         // }
-  //         console.log("Data: ", data)
-  //         res.send(data)
-  //     }
-  // })
   console.log("Sending image " + req.params.id)
   var img = fs.readFileSync('./img/' + req.params.id + '.jpg')
   res.writeHead(200, { 'Content-Type': 'image/jpg' })
@@ -106,10 +85,6 @@ app.get('/commentInfo/:id', function (req, res) {
       console.log("Image id not found")
       res.send({ statusCode: 400, message: "Image id not found" })
     } else {
-      // const response = {
-      //     statusCode: 200,
-      //     comments: comments
-      // }
       console.log(comments)
       res.send({ statusCode: 200, content: comments })
     }
@@ -161,7 +136,6 @@ app.post('/createUser', function (req, res) {
       res.send({ statusCode: 400, message: "Email, username and password required" })
   } else {
     bcrypt.hash(req.body.password, 12).then(function(hash) {
-      console.log("ASFSDFSDF ", hash)
       var userData = {
         email: req.body.email,
         username: req.body.username,
