@@ -58,6 +58,35 @@ app.get('/getImage/:id', function (req, res) {
   res.end(img, 'binary')
 })
 
+app.post('/imageSearch', function(req, res) {
+  var query = {} //req.body.query
+  var sortBy = {}
+  switch(req.body.sortBy) {
+    case "newest":
+      sortBy = {imageId: -1}
+      break
+    case "oldest":
+      sortBy = {imageId: 1}
+      break
+    case "upvotes":
+      sortBy = {upvotes: -1}
+      break
+    default:
+      sortBy = {imageId: -1}
+
+  }
+  Image.find(query).sort(sortBy).exec(function (err, imgs) {
+    if (err) {
+      console.log(err)
+      res.send({ statusCode: 400, message: err })
+    } else {
+      var idArray = []
+      imgs.map(obj => { idArray.push(obj.imageId) })
+      res.send({ statusCode: 200, content: idArray })
+    }
+  })
+})
+
 app.get('/urls', function (req, res) {
   Image.find({}, { imageId: 1, _id: 0 }, function (err, imgs) {
     if (err) {

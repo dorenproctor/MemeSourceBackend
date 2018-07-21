@@ -17,3 +17,6 @@ curl -i -X DELETE http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/delete
 curl -i -X PUT http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/upvoteImage/someUsername/0
 
 curl -i -X PUT http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/downvoteImage/someUsername/0
+
+curl -i -X POST -H 'Content-Type: application/json' -d '{"sortBy": "newest"}' http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/imageSearch
+
