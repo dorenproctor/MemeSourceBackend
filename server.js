@@ -3,25 +3,14 @@
 const express = require('express')
 const app = express()
 const fs = require('fs')
-const mongoose = require('mongoose')
 const bodyParser = require('body-parser')
-const schemas = require('./schemas')
 const bcrypt = require('bcrypt')
+const database = require('./database')
 
-var User = mongoose.model('User', schemas.User)
-var Comment = mongoose.model('Comment', schemas.Comment)
-var Image = mongoose.model('Image', schemas.Image)
+db = database.getInstance()
 
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
-
-mongoose.connect('mongodb://localhost/ms')
-
-var db = mongoose.connection
-db.on('error', console.error.bind(console, 'Failed to connect to database'))
-db.once('open', function () {
-  console.log("Connected to Database")
-})
 
 /* available commands:
     /imageInfo/:id
@@ -38,18 +27,30 @@ db.once('open', function () {
 */
 
 
-app.get('/imageInfo/:id', function (req, res) {
-  Image.findOne({ "imageId": req.params.id }, function (err, dbEntry) {
-    if (err) {
-      console.log(err)
-      res.send({ statusCode: 400, message: err })
-    } else {
-      console.log(dbEntry)
-      res.send({ statusCode: 200, content: dbEntry })
-    }
-  })
-})
+//these closures allow the callback to accept parameters from both here and the db function
+function standardOnSuccess(res) {
+  return (content) => {
+    console.log(content)
+    res.send({ statusCode: 200, content: content })
+  }
+}
 
+function onSuccessJustLog(res) {
+  return (message) => {
+    console.log(message)
+  }
+}
+
+function standardOnFailure(res) {
+  return (err) => {
+    console.log(err)
+    res.send({ statusCode: 400, message: err })
+  }
+}
+
+app.get('/imageInfo/:id', function (req, res) {
+  db.getImage(req.params.id,standardOnFailure(res),standardOnSuccess(res))
+})
 
 app.get('/getImage/:id', function (req, res) {
   console.log("Sending image " + req.params.id)
@@ -73,53 +74,17 @@ app.post('/imageSearch', function(req, res) {
       break
     default:
       sortBy = {imageId: -1}
-
   }
-  Image.find(query).sort(sortBy).exec(function (err, imgs) {
-    if (err) {
-      console.log(err)
-      res.send({ statusCode: 400, message: err })
-    } else {
-      var idArray = []
-      imgs.map(obj => { idArray.push(obj.imageId) })
-      res.send({ statusCode: 200, content: idArray })
-    }
-  })
+  db.searchImages(query,sortBy,standardOnFailure(res),standardOnSuccess(res))
 })
 
 app.get('/urls', function (req, res) {
-  Image.find({}, { imageId: 1, _id: 0 }, function (err, imgs) {
-    if (err) {
-      console.log(err)
-      res.send({ statusCode: 400, message: err })
-    } else {
-      var urls = imgs.map(obj => {
-        var newObj = {}
-        var string = "http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/getImage/" + obj.imageId
-        newObj["url"] = string
-        return newObj
-      })
-      res.send({ statusCode: 200, content: urls })
-    }
-  }).sort({ imageId: 1 })
+  db.getUrls(standardOnFailure(res),standardOnSuccess(res))
 })
-
 
 app.get('/commentInfo/:id', function (req, res) {
-  Comment.find({ "imageId": req.params.id }, function (err, comments) {
-    if (err) {
-      console.log(err)
-      res.send({ statusCode: 400, message: err })
-    } else if (!comments) {
-      console.log("Image id not found")
-      res.send({ statusCode: 400, message: "Image id not found" })
-    } else {
-      console.log(comments)
-      res.send({ statusCode: 200, content: comments })
-    }
-  })
+  db.getCommentInfo(req.params.id,standardOnFailure(res),standardOnSuccess(res))
 })
-
 
 app.post('/postComment', function (req, res) {
   if (req.body.imageId != null && req.body.content && req.body.user) {
@@ -128,250 +93,88 @@ app.post('/postComment', function (req, res) {
       content: req.body.content,
       user: req.body.user
     }
-    Comment.create(commentData, function (err, user) {
-      if (err) {
-        console.log(err)
-        res.send({ statusCode: 400, message: err })
-      } else {
-        console.log("Created comment", req.body.content)
-        res.send({ statusCode: 200 })
-      }
-    })
+    db.postComment(commentData,standardOnFailure(res),standardOnSuccess(res))
   } else {
     res.send({ statusCode: 400, message: "The proper parameters were not passed" })
   }
 })
 
-
 app.delete('/deleteComment/:id', function (req, res) {
-  Comment.findByIdAndRemove(req.params.id, function (err, removed) {
-    if (err) {
-      console.log(err)
-      res.send({ statusCode: 400, message: err })
-    } else if (!removed) {
-      console.log("Comment not found to delete")
-      res.send({ statusCode: 400, message: "Comment not found to delete" })
-    } else {
-      console.log("Comment removed: ", removed)
-      res.send({ statusCode: 200 })
-    }
-  })
+  db.deleteComment(req.params.id,standardOnFailure(res),standardOnSuccess(res))
 })
 
-
 app.post('/createUser', function (req, res) {
-  if (!req.body.email || !req.body.username ||
-    !req.body.password) {
+  const username = req.body.username
+  const password = req.body.password
+  const email = req.body.email
+  if (!email || !username || !password) {
       res.send({ statusCode: 400, message: "Email, username and password required" })
   } else {
-    bcrypt.hash(req.body.password, 12).then(function(hash) {
+    bcrypt.hash(password, 12).then(function(hash) {
       var userData = {
-        email: req.body.email,
-        username: req.body.username,
+        email: email,
+        username: username,
         password: hash,
       }
-      User.create(userData, function (err, user) {
-        if (err) {
-          console.log(err)
-          res.send({ statusCode: 400, message: err })
-        } else {
-          console.log("Created user " + req.body.username)
-          res.send({ statusCode: 200 })
-        }
-      })
+      db.createUser(userData,standardOnFailure(res),standardOnSuccess(res))
     })
   }
 })
 
-
 app.get('/listUsers', function (req, res) {
-  User.find(function (err, users) {
-    if (err) {
-      console.log(err)
-      res.send({ statusCode: 400, message: err })
-    } else {
-      console.log(users)
-      res.send({ statusCode: 200, content: users })
-    }
-  })
+  db.listUsers(standardOnFailure(res),standardOnSuccess(res))
 })
-
 
 app.post('/signIn', function (req, res) {
-  if (!req.body.username || !req.body.password) {
-    res.send({ statusCode: 400, message: "Username and password required" })
-  }
   const username = req.body.username
   const password = req.body.password
-  User.findOne({ "username": username }, function (err, user) {
-    if (err) {
-      console.log(err)
-      res.send({ statusCode: 400, message: err })
-    } else if (!user) {
-      console.log("Did not find user: ", username)
-      res.send({ statusCode: 400, message: "Did not find user" })
-    } else {
-      bcrypt.compare(password, user.password).then(function(result) {
-        if (result) {
-          console.log(user.username, " signed in")
-          res.send({ statusCode: 200, message: "Sign In verified" })
-        } else {
-          console.log("Password does not match")
-          res.send({ statusCode: 400, message: "Password does not match" })
-        }
-      })
-    }
-  })
+  if (!username || !password) {
+    res.send({ statusCode: 400, message: "Username and password required" })
+  }
+  db.signIn(username,password,standardOnFailure(res),standardOnSuccess(res))
 })
-
-
-
-
 
 app.put('/upvoteImage', function (req, res) {
   var username = req.body.username
   var imageId = req.body.imageId
   var upvoted = false
   var downvoted = false
-  User.findOne({ "username": username }, function (err, user) {
-    if (err) {
-      console.log(err)
-      res.send({statusCode: 400, message: err})
-      return
-    } else if (!user) {
-      console.log(err)
-      res.send({statusCode: 400, message: "User not found"})
-    } else {
-      Image.findOne({ "imageId": imageId }, function (err, img) {
-        if (err) {
-          console.log(err)
-          res.send({ statusCode: 400, message: err })
-          return
-        } else if (!img) {
-          console.log("Could not find image")
-          res.send({ statusCode: 400, message: "Could not find image" })
-          return
-        } else {
-          if (img.upvoters.includes(username)) { upvoted = true }
-          if (img.downvoters.includes(username)) { downvoted = true }
-          if (!upvoted) { //add upvote
-            Image.updateOne({ "imageId": imageId }, { $push: { upvoters: username }, $inc: { upvotes: 1 } }, function (err, data) {
-              if (err) {
-                console.log(err)
-                res.send({ statusCode: 400, message: err })
-                return
-              } else {
-                console.log(username + " upvoted " + imageId)
-              }
-            })
-          } else { //already upvoted. remove it
-            Image.updateOne({ "imageId": imageId }, { $pull: { upvoters: username }, $inc: { upvotes: -1 } }, function (err, data) {
-              if (err) {
-                console.log(err)
-                res.send({ statusCode: 400, message: err })
-                return
-              } else {
-                console.log(username + " removed upvote on Image" + imageId)
-              }
-            })
-          }
-          if (downvoted) { //remove downvote
-            Image.updateOne({ "imageId": imageId }, { $pull: { downvoters: username }, $inc: { downvotes: -1 } }, function (err, data) {
-              if (err) {
-                console.log(err)
-                res.send({ statusCode: 400, message: err })
-                return
-              } else {
-                console.log("Downvote on Image " + imageId + " by " + username + " removed because of upvote")
-              }
-            })
-          }
-        }
-        Image.findOne({ "imageId": imageId }, function (err, content) {
-          if (err) {
-            res.send({ statusCode: 400, message: err })
-            return
-          }
-          res.send({ statusCode: 200, content: content })
-        })
-      })
-    }
-  })
+  db.findUser(username,standardOnFailure(res),
+    db.getImage(imageId,standardOnFailure(res), () => {
+      if (img.upvoters.includes(username)) upvoted = true
+      if (img.downvoters.includes(username)) downvoted = true
+      if (!upvoted) { //add upvote and remove downvote if it exists
+        db.addUpvote(imageId,username,standardOnFailure(res),onSuccessJustLog(res))
+        if (downvoted)
+          db.removeDownvote(imageId,username,standardOnFailure(res),onSuccessJustLog(res))
+      } else { //already upvoted. remove it
+        db.removeUpvote(imageId,username,standardOnFailure(res),onSuccessJustLog(res))
+      }
+    })
+  )
+  db.getImage(imageId,standardOnFailure(res),standardOnSuccess(res))
 })
-
 
 app.put('/downvoteImage', function (req, res) {
   var username = req.body.username
   var imageId = req.body.imageId
   var upvoted = false
   var downvoted = false
-  User.findOne({ "username": username }, function (err, user) {
-    if (err) {
-      console.log(err)
-      res.send({statusCode: 400, message: err})
-      return
-    } else if (!user) {
-      console.log(err)
-      res.send({statusCode: 400, message: "User not found"})
-    } else {
-      Image.findOne({ "imageId": imageId }, function (err, img) {
-        if (err) {
-          console.log(err)
-          res.send({ statusCode: 400, message: err })
-          return
-        } else if (!img) {
-          console.log("Could not find image")
-          res.send({ statusCode: 400, message: "Could not find image" })
-          return
-        } else {
-          if (img.upvoters.includes(username)) { upvoted = true }
-          if (img.downvoters.includes(username)) { downvoted = true }
-          if (!downvoted) { //add upvote
-            Image.updateOne({ "imageId": imageId }, { $push: { downvoters: username }, $inc: { downvotes: 1 } }, function (err, data) {
-              if (err) {
-                console.log(err)
-                res.send({ statusCode: 400, message: err })
-                return
-              } else {
-                console.log(username + " downvoted " + imageId)
-              }
-            })
-          } else { //already upvoted. remove it
-            Image.updateOne({ "imageId": imageId }, { $pull: { downvoters: username }, $inc: { downvotes: -1 } }, function (err, data) {
-              if (err) {
-                console.log(err)
-                res.send({ statusCode: 400, message: err })
-                return
-              } else {
-                console.log(username + " removed downvote on Image" + imageId)
-              }
-            })
-          }
-          if (upvoted) { //remove upvote
-            Image.updateOne({ "imageId": imageId }, { $pull: { upvoters: username }, $inc: { upvotes: -1 } }, function (err, data) {
-              if (err) {
-                console.log(err)
-                res.send({ statusCode: 400, message: err })
-                return
-              } else {
-                console.log("Upvote on Image " + imageId + " by " + username + " removed because of downvote")
-              }
-            })
-          }
-        }
-        Image.findOne({ "imageId": imageId }, function (err, content) {
-          if (err) {
-            res.send({ statusCode: 400, message: err })
-            return
-          }
-          res.send({ statusCode: 200, content: content })
-        })
-      })
-    }
-  })
+  db.findUser(username,standardOnFailure(res),
+    db.getImage(imageId,standardOnFailure(res), () => {
+      if (img.upvoters.includes(username)) upvoted = true
+      if (img.downvoters.includes(username)) downvoted = true
+      if (!downvoted) { //add upvote and remove downvote if it exists
+        db.addDownvote(imageId,username,standardOnFailure(res),onSuccessJustLog(res))
+        if (upvoted)
+          db.removeUpvote(imageId,username,standardOnFailure(res),onSuccessJustLog(res))
+      } else { //already upvoted. remove it
+        db.removeDownvote(imageId,username,standardOnFailure(res),onSuccessJustLog(res))
+      }
+    })
+  )
+  db.getImage(imageId,standardOnFailure(res),standardOnSuccess(res))
 })
-
-
 
 app.get('/', (req, res) => {
   console.log('Welcome to memesource')
