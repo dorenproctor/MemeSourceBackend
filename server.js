@@ -1,14 +1,13 @@
 'use strict'
-
+//pgrep node | xargs kill; sudo rm server.js;  sudo vim server.js
+//nohup npm start &
 const express = require('express')
 const app = express()
 const fs = require('fs')
 const bodyParser = require('body-parser')
 const bcrypt = require('bcrypt')
 const database = require('./database')
-
-db = database.getInstance()
-
+const db = database()
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 
@@ -139,20 +138,29 @@ app.put('/upvoteImage', function (req, res) {
   var imageId = req.body.imageId
   var upvoted = false
   var downvoted = false
-  db.findUser(username,standardOnFailure(res),
-    db.getImage(imageId,standardOnFailure(res), () => {
+  var returnImage = (res) => {
+    return (message) => {
+      console.log(message);
+      db.getImage(imageId,standardOnFailure(res),standardOnSuccess(res))
+    }
+  }
+  db.findUser(username,standardOnFailure(res),(user) => {
+    db.getImage(imageId,standardOnFailure(res),(img) => {
       if (img.upvoters.includes(username)) upvoted = true
       if (img.downvoters.includes(username)) downvoted = true
       if (!upvoted) { //add upvote and remove downvote if it exists
-        db.addUpvote(imageId,username,standardOnFailure(res),onSuccessJustLog(res))
-        if (downvoted)
-          db.removeDownvote(imageId,username,standardOnFailure(res),onSuccessJustLog(res))
+        db.addUpvote(imageId,username,standardOnFailure(res),(message) => {
+          console.log(message);
+          if (downvoted)
+            db.removeDownvote(imageId,username,standardOnFailure(res),returnImage(res))
+          else 
+            db.getImage(imageId,standardOnFailure(res),standardOnSuccess(res))
+        })
       } else { //already upvoted. remove it
-        db.removeUpvote(imageId,username,standardOnFailure(res),onSuccessJustLog(res))
+        db.removeUpvote(imageId,username,standardOnFailure(res),returnImage(res))
       }
     })
-  )
-  db.getImage(imageId,standardOnFailure(res),standardOnSuccess(res))
+  })
 })
 
 app.put('/downvoteImage', function (req, res) {
@@ -160,20 +168,29 @@ app.put('/downvoteImage', function (req, res) {
   var imageId = req.body.imageId
   var upvoted = false
   var downvoted = false
-  db.findUser(username,standardOnFailure(res),
-    db.getImage(imageId,standardOnFailure(res), () => {
+  var returnImage = (res) => {
+    return (message) => {
+      console.log(message);
+      db.getImage(imageId,standardOnFailure(res),standardOnSuccess(res))
+    }
+  }
+  db.findUser(username,standardOnFailure(res), (user) => {
+    db.getImage(imageId,standardOnFailure(res), (img) => {
       if (img.upvoters.includes(username)) upvoted = true
       if (img.downvoters.includes(username)) downvoted = true
       if (!downvoted) { //add upvote and remove downvote if it exists
-        db.addDownvote(imageId,username,standardOnFailure(res),onSuccessJustLog(res))
-        if (upvoted)
-          db.removeUpvote(imageId,username,standardOnFailure(res),onSuccessJustLog(res))
+        db.addDownvote(imageId,username,standardOnFailure(res),(message) => {
+          console.log(message)
+          if (upvoted)
+            db.removeUpvote(imageId,username,standardOnFailure(res),returnImage(res))
+          else
+            db.getImage(imageId,standardOnFailure(res),standardOnSuccess(res))
+        })
       } else { //already upvoted. remove it
-        db.removeDownvote(imageId,username,standardOnFailure(res),onSuccessJustLog(res))
+        db.removeDownvote(imageId,username,standardOnFailure(res),returnImage(res))
       }
     })
-  )
-  db.getImage(imageId,standardOnFailure(res),standardOnSuccess(res))
+  })
 })
 
 app.get('/', (req, res) => {
