@@ -53,14 +53,14 @@ app.get('/imageInfo/:id', function (req, res) {
 
 app.get('/getImage/:id', function (req, res) {
   console.log("Sending image " + req.params.id)
-  var img = fs.readFileSync('./img/' + req.params.id + '.jpg')
+  const img = fs.readFileSync('./img/' + req.params.id + '.jpg')
   res.writeHead(200, { 'Content-Type': 'image/jpg' })
   res.end(img, 'binary')
 })
 
 app.post('/imageSearch', function(req, res) {
-  var query = {} //req.body.query
-  var sortBy = {}
+  const query = {} //req.body.query
+  const sortBy = {}
   switch(req.body.sortBy) {
     case "newest":
       sortBy = {imageId: -1}
@@ -87,7 +87,7 @@ app.get('/commentInfo/:id', function (req, res) {
 
 app.post('/postComment', function (req, res) {
   if (req.body.imageId != null && req.body.content && req.body.user) {
-    var commentData = {
+    const commentData = {
       imageId: req.body.imageId,
       content: req.body.content,
       user: req.body.user
@@ -110,7 +110,7 @@ app.post('/createUser', function (req, res) {
       res.send({ statusCode: 400, message: "Email, username and password required" })
   } else {
     bcrypt.hash(password, 12).then(function(hash) {
-      var userData = {
+      const userData = {
         email: email,
         username: username,
         password: hash,
@@ -134,11 +134,11 @@ app.post('/signIn', function (req, res) {
 })
 
 app.put('/upvoteImage', function (req, res) {
-  var username = req.body.username
-  var imageId = req.body.imageId
-  var upvoted = false
-  var downvoted = false
-  var returnImage = (res) => {
+  const username = req.body.username
+  const imageId = req.body.imageId
+  let upvoted = false
+  let downvoted = false
+  const returnImage = (res) => {
     return (message) => {
       console.log(message);
       db.getImage(imageId,standardOnFailure(res),standardOnSuccess(res))
@@ -164,11 +164,11 @@ app.put('/upvoteImage', function (req, res) {
 })
 
 app.put('/downvoteImage', function (req, res) {
-  var username = req.body.username
-  var imageId = req.body.imageId
-  var upvoted = false
-  var downvoted = false
-  var returnImage = (res) => {
+  const username = req.body.username
+  const imageId = req.body.imageId
+  let upvoted = false
+  let downvoted = false
+  const returnImage = (res) => {
     return (message) => {
       console.log(message);
       db.getImage(imageId,standardOnFailure(res),standardOnSuccess(res))
