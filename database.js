@@ -3,8 +3,9 @@ const mongoose = require('mongoose')
 const bcrypt = require('bcrypt')
 const schemas = require('./schemas')
 
-var SingletonDatabase = (() => {
-  var instance
+//I think I can just export the database itself without the singleton without side effects
+const SingletonDatabase = (() => {
+  const instance
   return () => {
     if (!instance)
       instance = new Database()
@@ -37,29 +38,25 @@ class Database {
     this.Comment = mongoose.model('Comment', schemas.Comment)
     this.Image = mongoose.model('Image', schemas.Image)
     mongoose.connect('mongodb://localhost/ms')
-    var db = mongoose.connection
+    const db = mongoose.connection
     db.on('error', console.error.bind(console, 'Failed to connect to database'))
     db.once('open', function () {
-      console.log("Connected to Database")
+      console.log('Connected to Database')
     })
   }
 
   getImage(imageId,onFailure,onSuccess) {
-    this.Image.findOne({ "imageId": imageId }, function (err, dbEntry) {
-      if (err) {
-        onFailure(err)
-      } else {
-        onSuccess(dbEntry)
-      }
+    this.Image.findOne({ 'imageId': imageId }, function (err, dbEntry) {
+      if (err) onFailure(err)
+      else onSuccess(dbEntry)
     })
   }
 
   searchImages(query,sortBy,onFailure,onSuccess) {
     this.Image.find(query).sort(sortBy).exec(function (err, imgs) {
-      if (err) {
-        onFailure(err)
-      } else {
-        var idArray = []
+      if (err) onFailure(err)
+      else {
+        const idArray = []
         imgs.map(obj => { idArray.push(obj.imageId) })
         onSuccess(idArray)//()(idArray)
       }
@@ -68,165 +65,103 @@ class Database {
 
   getUrls() {
     this.Image.find({}, { imageId: 1, _id: 0 }, function (err, imgs) {
-      if (err) {
-        onFailure(err)
-      } else {
-        var urls = imgs.map(obj => {
-          var newObj = {}
-          var string = "http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/getImage/" + obj.imageId
-          newObj["url"] = string
-          return newObj
-        })
+      if (err) onFailure(err)
+      else {
+        const urls = []
+        for (const img of imgs)
+          urls.push({'url': 'http://ec2-18-188-44-41.us-east-2.compute.amazonaws.com/getImage/' + img.imageId})
         onSuccess(urls)
       }
     }).sort({ imageId: 1 })
   }
 
   getCommentInfo(imageId,onFailure,onSuccess) {
-    this.Comment.find({ "imageId": imageId }, function (err, comments) {
-      if (err) {
-        onFailure(err)
-      } else if (!comments) {
-        onFailure("Image id not found")
-      } else {
-        onSuccess(comments)
-      }
+    this.Comment.find({ 'imageId': imageId }, function (err, comments) {
+      if (err) onFailure(err)
+      else if (!comments) onFailure('Image id not found') //is this the right error message?
+      else onSuccess(comments)
     })
   }
 
   postComment(commentData,onFailure,onSuccess) {
     this.Comment.create(commentData, function (err, user) {
-      if (err) {
-        onFailure(err)
-      } else {
-        onSuccess(user)
-      }
+      if (err) onFailure(err)
+      else onSuccess(user)
     })
   }
 
   deleteComment(id,onFailure,onSuccess) {
     this.Comment.findByIdAndRemove(id, function (err, removed) {
-      if (err) {
-        onFailure(err)
-      } else if (!removed) {
-        onFailure("Comment not found to delete")
-      } else {
-        onSuccess(removed)
-      }
+      if (err) onFailure(err)
+      else if (!removed) onFailure('Comment not found to delete')
+      else onSuccess(removed)
     })
   }
 
   createUser(userData,onFailure,onSuccess) {
     this.User.create(userData, function (err, user) {
-      if (err) {
-        onFailure(err)
-      } else {
-        onSuccess(user)
-      }
+      if (err) onFailure(err)
+      else onSuccess(user)
     })
   }
 
   listUsers(onFailure,onSuccess) {
     this.User.find(function (err, users) {
-      if (err) {
-        onFailure(err)
-      } else {
-        onSuccess(users)
-      }
+      if (err) onFailure(err)
+      else onSuccess(users)
     })
   }
 
   signIn(username,password,onFailure,onSuccess) {
-    this.User.findOne({ "username": username }, function (err, user) {
-      if (err) {
-        onFailure(err)
-      } else if (!user) {
-        onFailure("Did not find user: "+username)
-      } else {
+    this.User.findOne({ 'username': username }, function (err, user) {
+      if (err) onFailure(err)
+      else if (!user) onFailure('Did not find user: '+username)
+      else {
         bcrypt.compare(password, user.password).then(function(result) {
-          if (result) {
-            onSuccess(user.username+" signed in")
-          } else {
-            onFailure("Password does not match")
-          }
+          if (result) onSuccess(user.username+' signed in')
+          else onFailure('Password does not match')
         })
       }
     })
   }
 
   findUser(username,onFailure,onSuccess) {
-    this.User.findOne({ "username": username }, function (err, user) {
-      if (err) {
-        onFailure(err)
-      } else if (!user) {
-        onFailure("User not found: "+err)
-      } else {
-        onSuccess(user)
-      }
+    this.User.findOne({ 'username': username }, function (err, user) {
+      if (err) onFailure(err)
+      else if (!user) onFailure('User not found: '+err)
+      else onSuccess(user)
     })
   }
   
   addUpvote(imageId,username,onFailure,onSuccess) {
-    this.Image.updateOne({ "imageId": imageId }, { $push: { upvoters: username }, 
-                              $inc: { upvotes: 1 } }, function (err, data) {
-      if (err) {
-        onFailure(err)
-      } else {
-        onSuccess(username + " upvoted " + imageId)
-      }
+    this.Image.updateOne({ 'imageId': imageId }, { $push: { upvoters: username }, 
+                                  $inc: { upvotes: 1 } }, function (err, data) {
+      if (err) onFailure(err)
+      else onSuccess(username + ' upvoted ' + imageId)
     })
   }
 
   removeUpvote(imageId,username,onFailure,onSuccess) {
-    this.Image.updateOne({ "imageId": imageId }, { $pull: { upvoters: username },
-                              $inc: { upvotes: -1 } }, function (err, data) {
-      if (err) {
-        onFailure(err)
-      } else {
-        onSuccess(username + " removed upvote on Image" + imageId)
-      }
+    this.Image.updateOne({ 'imageId': imageId }, { $pull: { upvoters: username },
+                                  $inc: { upvotes: -1 } }, function (err, data) {
+      if (err) onFailure(err)
+      else onSuccess(username + ' removed upvote on Image' + imageId)
     })
   }
 
   addDownvote(imageId,username,onFailure,onSuccess) {
-    this.Image.updateOne({ "imageId": imageId }, { $push: { downvoters: username },
-                              $inc: { downvotes: 1 } }, function (err, data) {
-      if (err) {
-        onFailure(err)
-      } else {
-        onSuccess(username + " downvoted " + imageId)
-      }
+    this.Image.updateOne({ 'imageId': imageId }, { $push: { downvoters: username },
+                                  $inc: { downvotes: 1 } }, function (err, data) {
+      if (err) onFailure(err)
+      else onSuccess(username + ' downvoted ' + imageId)
     })
   }
 
   removeDownvote(imageId,username,onFailure,onSuccess) {
-    this.Image.updateOne({ "imageId": imageId }, { $pull: { downvoters: username },
+    this.Image.updateOne({ 'imageId': imageId }, { $pull: { downvoters: username },
                               $inc: { downvotes: -1 } }, function (err, data) {
-      if (err) {
-        onFailure(err)
-      } else {
-        onSuccess(username + " removed downvote on Image" + imageId)
-      }
+      if (err) onFailure(err)
+      else onSuccess(username + ' removed downvote on Image' + imageId)
     })
   }
 }
-
-
-//closure!
-/*var SingletonDatabase = (function () {
-  var instance;
-
-  function createInstance() {
-      var object = new Database();
-      return object;
-  }
-
-  return {
-      getInstance: function () {
-          if (!instance) {
-              instance = createInstance();
-          }
-          return instance;
-      }
-  };
-})();*/
