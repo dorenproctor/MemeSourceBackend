@@ -5,7 +5,7 @@ const schemas = require('./schemas')
 
 //I think I can just export the database itself without the singleton without side effects
 const SingletonDatabase = (() => {
-  const instance
+  let instance
   return () => {
     if (!instance)
       instance = new Database()
@@ -162,6 +162,20 @@ class Database {
                               $inc: { downvotes: -1 } }, function (err, data) {
       if (err) onFailure(err)
       else onSuccess(username + ' removed downvote on Image' + imageId)
+    })
+  }
+
+  addTag(imageId,tag,username,onFailure,onSuccess) {
+    this.Image.updateOne({ 'imageId': imageId }, { $push: { tags: tag } }, function (err, data) {
+      if (err) onFailure(err)
+      else onSuccess(username + ' added tag "'+tag+'" on Image' + imageId)
+    })
+  }
+
+  removeTag(imageId,tag,username,onFailure,onSuccess) {
+    this.Image.updateOne({ 'imageId': imageId }, { $pull: { tags: tag } }, function (err, data) {
+      if (err) onFailure(err)
+      else onSuccess(username + ' removed tag "'+tag+'" on Image' + imageId)
     })
   }
 }

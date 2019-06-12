@@ -59,8 +59,8 @@ app.get('/getImage/:id', function (req, res) {
 })
 
 app.post('/imageSearch', function(req, res) {
-  const query = {} //req.body.query
-  const sortBy = {}
+  const query = req.body.query || {}//{} //
+  let sortBy = {}
   switch(req.body.sortBy) {
     case "newest":
       sortBy = {imageId: -1}
@@ -193,7 +193,18 @@ app.put('/downvoteImage', function (req, res) {
   })
 })
 
-app.get('/', (req, res) => {
+app.put('/addTag', function(req, res) {
+  const {imageId, tag, username} = req.body
+  console.log('received: '+imageId, tag, username)
+  db.addTag(imageId,tag,username,standardOnFailure(res), standardOnSuccess(res))
+})
+
+app.put('/removeTag', function(req, res) {
+  const {imageId, tag, username} = req.body
+  db.removeTag(imageId,tag,username,standardOnFailure(res), standardOnSuccess(res))
+})
+
+app.get('/', function(req, res) {
   console.log('Welcome to memesource')
   res.send({ statusCode: 200 , message: 'Welcome to memesource' })
 })
@@ -203,8 +214,8 @@ app.listen(3000, () => console.log('Server is running'))
 
 
 
-// for (var i = 0 i<124 i++) {
-//     var imageData = {
+// for (let i = 0 i<124 i++) {
+//     const imageData = {
 //         imageId: i,
 //     }
 //     Image.create(imageData, function (err, image) {
