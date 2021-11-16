@@ -10,7 +10,7 @@
   "author": "Doren Proctor",
   "license": "ISC",
   "dependencies": {
-    "aws-sdk": "^2.229.1",
+    "aws-sdk": "^2.814.0",
     "body-parser": "^1.18.2",
     "express": "^4.16.3",
     "mongoose": "^5.0.16"
